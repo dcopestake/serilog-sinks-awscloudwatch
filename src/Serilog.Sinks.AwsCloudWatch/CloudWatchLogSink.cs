@@ -140,12 +140,23 @@ namespace Serilog.Sinks.AwsCloudWatch
         /// <exception cref="Serilog.Sinks.AwsCloudWatch.AwsCloudWatchSinkException"></exception>
         private async Task CreateLogStreamAsync()
         {
-            CreateLogStreamRequest createLogStreamRequest = new CreateLogStreamRequest()
+            var describeRequest = new DescribeLogStreamsRequest()
             {
                 LogGroupName = options.LogGroupName,
-                LogStreamName = logStreamName
+                LogStreamNamePrefix = logStreamName
             };
-            var createLogStreamResponse = await cloudWatchClient.CreateLogStreamAsync(createLogStreamRequest);
+            var logStreams = await cloudWatchClient.DescribeLogStreamsAsync(describeRequest);
+            var logStream = logStreams.LogStreams.FirstOrDefault(ls => string.Equals(ls.LogStreamName, logStreamName, StringComparison.OrdinalIgnoreCase));
+
+            if (logStream == null)
+            {
+                CreateLogStreamRequest createLogStreamRequest = new CreateLogStreamRequest()
+                {
+                    LogGroupName = options.LogGroupName,
+                    LogStreamName = logStreamName
+                };
+                var createLogStreamResponse = await cloudWatchClient.CreateLogStreamAsync(createLogStreamRequest);
+            }
         }
 
         /// <summary>
